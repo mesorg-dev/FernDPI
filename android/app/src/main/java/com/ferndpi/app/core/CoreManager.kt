@@ -134,8 +134,10 @@ class CoreManager(context: Context) {
     }
 
     private fun prepareBinary(): File? {
+        val fromLib = File(appContext.applicationInfo.nativeLibraryDir, LIB_NAME)
+        if (fromLib.isFile) return fromLib
         val abi = Build.SUPPORTED_ABIS.firstOrNull { it in SUPPORTED_ABIS } ?: return null
-        val out = File(appContext.filesDir, "bin/ferndpi")
+        val out = File(appContext.filesDir, "bin/$LIB_NAME")
         if (out.isFile && out.length() > 0L && out.canExecute()) return out
         return runCatching {
             out.parentFile?.mkdirs()
@@ -149,6 +151,7 @@ class CoreManager(context: Context) {
 
     companion object {
         private const val MAX_LOG_LINES = 300
+        private const val LIB_NAME = "libferndpi.so"
         private val SUPPORTED_ABIS = setOf("arm64-v8a", "armeabi-v7a", "x86_64")
 
         fun buildArgs(settings: Settings, configPath: String?): List<String> {

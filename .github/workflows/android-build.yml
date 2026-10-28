@@ -58,13 +58,15 @@ jobs:
           fi
           ls android/app/src/main/assets/flowseal
 
-      - name: Bundle core binaries into APK assets
+      - name: Bundle core binaries as native libs
         run: |
-          mkdir -p android/app/src/main/assets/core
-          cp target/aarch64-linux-android/release/ferndpi android/app/src/main/assets/core/arm64-v8a
-          cp target/armv7-linux-androideabi/release/ferndpi android/app/src/main/assets/core/armeabi-v7a
-          cp target/x86_64-linux-android/release/ferndpi android/app/src/main/assets/core/x86_64
-          ls -la android/app/src/main/assets/core
+          mkdir -p android/app/src/main/jniLibs/arm64-v8a
+          mkdir -p android/app/src/main/jniLibs/armeabi-v7a
+          mkdir -p android/app/src/main/jniLibs/x86_64
+          cp target/aarch64-linux-android/release/ferndpi android/app/src/main/jniLibs/arm64-v8a/libferndpi.so
+          cp target/armv7-linux-androideabi/release/ferndpi android/app/src/main/jniLibs/armeabi-v7a/libferndpi.so
+          cp target/x86_64-linux-android/release/ferndpi android/app/src/main/jniLibs/x86_64/libferndpi.so
+          ls -la android/app/src/main/jniLibs/*/
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5

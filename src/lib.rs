@@ -1,12 +1,15 @@
 pub mod config;
 pub mod core;
+pub mod dns_tcp;
 pub mod flowseal;
 pub mod hostlist;
 pub mod http;
 pub mod i18n;
 pub mod ipset;
+pub mod netguard;
 pub mod pipeline;
 pub mod socks5;
+pub mod socks5_udp;
 pub mod stats;
 pub mod strategy;
 pub mod testutil;

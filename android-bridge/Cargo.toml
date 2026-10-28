@@ -1,0 +1,20 @@
+[package]
+name = "ferndpi-android"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Android JNI bridge for FernDPI: in-process core + VpnService.protect hook"
+
+[lib]
+name = "ferndpi_android"
+crate-type = ["cdylib"]
+
+[dependencies]
+ferndpi = { path = ".." }
+tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "time", "macros", "sync"] }
+clap = { version = "4", features = ["derive"] }
+jni = "0.21"
+serde_json = "1"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }

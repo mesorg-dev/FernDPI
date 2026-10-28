@@ -52,6 +52,7 @@ import com.ferndpi.app.ui.AppViewModel
 fun SettingsScreen(
     viewModel: AppViewModel,
     onBack: () -> Unit,
+    onOpenApps: () -> Unit = {},
 ) {
     val settings by viewModel.settings.collectAsState()
 
@@ -183,6 +184,34 @@ fun SettingsScreen(
 
             Divider(modifier = Modifier.padding(vertical = 8.dp))
             SectionHeader(stringResource(R.string.behavior_section))
+
+            SwitchRow(
+                label = stringResource(R.string.vpn_mode),
+                checked = settings.vpnMode,
+                onCheckedChange = { value ->
+                    viewModel.updateSettings { it.copy(vpnMode = value) }
+                },
+            )
+
+            if (settings.vpnMode) {
+                OutlinedButton(
+                    onClick = onOpenApps,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = stringResource(
+                            R.string.vpn_excluded_apps,
+                            settings.excludedApps.size,
+                        ),
+                        modifier = Modifier.weight(1f),
+                    )
+                    Icon(
+                        imageVector = Icons.Filled.ArrowDropDown,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            }
 
             SwitchRow(
                 label = stringResource(R.string.autostart),

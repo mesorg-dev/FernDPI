@@ -1,4 +1,4 @@
-//! Minimal SOCKS5 (RFC 1928) server: no-auth + CONNECT only.
+//! Minimal SOCKS5 (RFC 1928) server: no-auth + CONNECT + UDP ASSOCIATE.
 
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
 
@@ -9,10 +9,12 @@ use tracing::{debug, info};
 
 use crate::core::Core;
 use crate::i18n::Key;
+use crate::netguard;
 use crate::pipeline::{self, Session};
 
 const SOCKS_VERSION: u8 = 0x05;
 const CMD_CONNECT: u8 = 0x01;
+const CMD_UDP_ASSOCIATE: u8 = 0x03;
 const AUTH_NONE: u8 = 0x00;
 const AUTH_UNACCEPTABLE: u8 = 0xFF;
 
@@ -52,7 +54,7 @@ impl Target {
     }
 }
 
-async fn resolve_target(
+pub(crate) async fn resolve_target(
     target: &Target,
     hosts: &std::collections::HashMap<String, std::net::IpAddr>,
 ) -> Result<Vec<SocketAddr>> {
@@ -63,9 +65,17 @@ async fn resolve_target(
             if let Some(ip) = hosts.get(&key) {
                 return Ok(vec![std::net::SocketAddr::from((*ip, *port))]);
             }
-            let addrs: Vec<SocketAddr> = tokio::net::lookup_host((host.as_str(), *port))
-                .await?
-                .collect();
+            let addrs: Vec<SocketAddr> = if netguard::is_active() {
+                crate::dns_tcp::resolve(host)
+                    .await?
+                    .into_iter()
+                    .map(|ip| std::net::SocketAddr::from((ip, *port)))
+                    .collect()
+            } else {
+                tokio::net::lookup_host((host.as_str(), *port))
+                    .await?
+                    .collect()
+            };
             if addrs.is_empty() {
                 bail!("no addresses resolved for {host}");
             }
@@ -74,22 +84,42 @@ async fn resolve_target(
     }
 }
 
-async fn connect_addrs(addrs: &[SocketAddr], timeout: std::time::Duration) -> Result<TcpStream> {
+async fn connect_one(addr: SocketAddr, timeout: std::time::Duration) -> Result<TcpStream> {
     let fut = async {
-        let mut last = None;
-        for addr in addrs {
-            match TcpStream::connect(addr).await {
-                Ok(s) => return Ok(s),
-                Err(e) => last = Some(e),
-            }
+        if netguard::is_active() {
+            use socket2::{Domain, Protocol, Socket, Type};
+            use std::os::unix::io::AsRawFd;
+            let domain = if addr.is_ipv4() { Domain::IPV4 } else { Domain::IPV6 };
+            let socket = Socket::new(domain, Type::STREAM, Some(Protocol::TCP))?;
+            netguard::protect(socket.as_raw_fd());
+            socket.set_nonblocking(false)?;
+            let std = tokio::task::spawn_blocking(move || -> anyhow::Result<std::net::TcpStream> {
+                socket.connect(&socket2::SockAddr::from(addr))?;
+                socket.set_nonblocking(true)?;
+                Ok(socket.into())
+            })
+            .await??;
+            Ok(TcpStream::from_std(std)?)
+        } else {
+            Ok(TcpStream::connect(addr).await?)
         }
-        Err(last
-            .map(anyhow::Error::from)
-            .unwrap_or_else(|| anyhow::anyhow!("no addresses to connect")))
     };
     tokio::time::timeout(timeout, fut)
         .await
         .map_err(|_| anyhow::anyhow!("connect timeout"))?
+}
+
+async fn connect_addrs(addrs: &[SocketAddr], timeout: std::time::Duration) -> Result<TcpStream> {
+    let mut last = None;
+    for addr in addrs {
+        match connect_one(*addr, timeout).await {
+            Ok(s) => return Ok(s),
+            Err(e) => last = Some(e),
+        }
+    }
+    Err(last
+        .map(anyhow::Error::from)
+        .unwrap_or_else(|| anyhow::anyhow!("no addresses to connect")))
 }
 
 pub async fn serve(listener: tokio::net::TcpListener, core: std::sync::Arc<Core>) -> Result<()> {
@@ -144,25 +174,41 @@ pub async fn handle_client(mut sock: TcpStream, core: &Core) -> Result<()> {
         if req[0] != SOCKS_VERSION {
             bail!(lang.t(Key::SocksBadVersion));
         }
+        if req[1] == CMD_UDP_ASSOCIATE {
+            let _target = match read_address(&mut sock).await {
+                Ok(t) => t,
+                Err(e) => {
+                    reply(&mut sock, REP_ADDR_UNSUP, "0.0.0.0:0".parse().unwrap()).await;
+                    return Err(e.context("udp associate address"));
+                }
+            };
+            return Ok(None);
+        }
         if req[1] != CMD_CONNECT {
             reply(&mut sock, REP_CMD_UNSUP, "0.0.0.0:0".parse().unwrap()).await;
             bail!(lang.t(Key::SocksCmdUnsupported));
         }
         match read_address(&mut sock).await {
-            Ok(t) => Ok(t),
+            Ok(t) => Ok(Some(t)),
             Err(e) => {
                 reply(&mut sock, REP_ADDR_UNSUP, "0.0.0.0:0".parse().unwrap()).await;
                 Err(e)
             }
         }
     };
-    let target = tokio::time::timeout(timeouts.socks_handshake, request)
+    let target_opt = tokio::time::timeout(timeouts.socks_handshake, request)
         .await
         .map_err(|_| anyhow::anyhow!("{}", lang.t(Key::SocksTimeout)))?
         .map_err(|e| {
             core.stats.on_error();
             e
         })?;
+
+    // UDP ASSOCIATE: hand the client a UDP relay socket and keep the control
+    // connection open (RFC 1928: association ends with the control TCP close).
+    let Some(target) = target_opt else {
+        return crate::socks5_udp::serve_associate(sock, core).await;
+    };
 
     // resolve first: ipset rules need the target IP before we pick a strategy
     let addrs = match resolve_target(&target, &core.config.hosts).await {
@@ -215,7 +261,7 @@ pub async fn handle_client(mut sock: TcpStream, core: &Core) -> Result<()> {
     Ok(())
 }
 
-async fn read_address(sock: &mut TcpStream) -> Result<Target> {
+pub(crate) async fn read_address(sock: &mut TcpStream) -> Result<Target> {
     let mut atyp = [0u8; 1];
     sock.read_exact(&mut atyp).await?;
     match atyp[0] {
@@ -248,7 +294,7 @@ async fn read_address(sock: &mut TcpStream) -> Result<Target> {
     }
 }
 
-async fn reply(sock: &mut TcpStream, rep: u8, bind: SocketAddr) {
+pub(crate) async fn reply(sock: &mut TcpStream, rep: u8, bind: SocketAddr) {
     let mut out = vec![SOCKS_VERSION, rep, 0x00];
     match bind {
         SocketAddr::V4(a) => {
@@ -279,5 +325,126 @@ fn map_connect_error(e: &anyhow::Error) -> u8 {
         REP_RULES
     } else {
         REP_GENERAL
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::Config;
+    use std::time::Duration;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    async fn start_socks() -> SocketAddr {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let core = Core::new(Config::default());
+        tokio::spawn(async move {
+            let _ = serve(listener, core).await;
+        });
+        addr
+    }
+
+    #[tokio::test]
+    async fn udp_associate_echo_roundtrip() {
+        // echo UDP server
+        let echo = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let echo_addr = echo.local_addr().unwrap();
+        tokio::spawn(async move {
+            let mut buf = [0u8; 2048];
+            loop {
+                if let Ok((n, from)) = echo.recv_from(&mut buf).await {
+                    let _ = echo.send_to(&buf[..n], from).await;
+                }
+            }
+        });
+
+        let socks_addr = start_socks().await;
+
+        // SOCKS control connection
+        let mut ctrl = TcpStream::connect(socks_addr).await.unwrap();
+        ctrl.write_all(&[0x05, 0x01, 0x00]).await.unwrap();
+        let mut greeting = [0u8; 2];
+        ctrl.read_exact(&mut greeting).await.unwrap();
+        assert_eq!(greeting, [0x05, 0x00]);
+
+        // UDP ASSOCIATE, DST.ADDR = 0.0.0.0:0 (per RFC)
+        ctrl.write_all(&[0x05, 0x03, 0x00, 0x01, 0, 0, 0, 0, 0, 0])
+            .await
+            .unwrap();
+        let mut rep = [0u8; 10];
+        tokio::time::timeout(Duration::from_secs(5), ctrl.read_exact(&mut rep))
+            .await
+            .expect("associate reply")
+            .unwrap();
+        assert_eq!(rep[0], 0x05, "socks version");
+        assert_eq!(rep[1], 0x00, "associate succeeded");
+        assert_eq!(rep[3], 0x01, "ipv4 bind");
+        let relay: SocketAddr = format!(
+            "{}.{}.{}.{}:{}",
+            rep[4],
+            rep[5],
+            rep[6],
+            rep[7],
+            u16::from_be_bytes([rep[8], rep[9]])
+        )
+        .parse()
+        .unwrap();
+
+        // SOCKS-UDP datagram: RSV RSV FRAG ATYP DST DATA
+        let udp = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let mut pkt = vec![0u8, 0u8, 0u8, 0x01];
+        pkt.extend_from_slice(&echo_addr.ip().to_string().parse::<Ipv4Addr>().unwrap().octets());
+        pkt.extend_from_slice(&echo_addr.port().to_be_bytes());
+        pkt.extend_from_slice(b"hello-udp");
+        udp.send_to(&pkt, relay).await.unwrap();
+
+        let mut rbuf = [0u8; 2048];
+        let (n, _) = tokio::time::timeout(Duration::from_secs(5), udp.recv_from(&mut rbuf))
+            .await
+            .expect("udp reply")
+            .unwrap();
+        let (dst, payload) = crate::socks5_udp::parse_udp_request(&rbuf[..n])
+            .expect("wrapped reply parses");
+        assert_eq!(dst, echo_addr);
+        assert_eq!(payload, b"hello-udp");
+
+        // closing control ends the association (smoke)
+        drop(ctrl);
+    }
+
+    #[tokio::test]
+    async fn connect_roundtrip() {
+        // upstream TCP echo
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let up_addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let (mut s, _) = listener.accept().await.unwrap();
+            let mut buf = [0u8; 64];
+            let n = s.read(&mut buf).await.unwrap();
+            let _ = s.write_all(&buf[..n]).await;
+        });
+
+        let socks_addr = start_socks().await;
+        let mut s = TcpStream::connect(socks_addr).await.unwrap();
+        s.write_all(&[0x05, 0x01, 0x00]).await.unwrap();
+        let mut g = [0u8; 2];
+        s.read_exact(&mut g).await.unwrap();
+
+        let mut req = vec![0x05, 0x01, 0x00, 0x01];
+        req.extend_from_slice(&up_addr.ip().to_string().parse::<Ipv4Addr>().unwrap().octets());
+        req.extend_from_slice(&up_addr.port().to_be_bytes());
+        s.write_all(&req).await.unwrap();
+        let mut rep = [0u8; 10];
+        s.read_exact(&mut rep).await.unwrap();
+        assert_eq!(rep[1], 0x00, "connect succeeded");
+
+        s.write_all(b"ping").await.unwrap();
+        let mut out = [0u8; 4];
+        tokio::time::timeout(Duration::from_secs(5), s.read_exact(&mut out))
+            .await
+            .expect("echo")
+            .unwrap();
+        assert_eq!(&out, b"ping");
     }
 }

@@ -45,6 +45,16 @@ jobs:
           cargo build --release --target aarch64-linux-android
           cargo build --release --target armv7-linux-androideabi
           cargo build --release --target x86_64-linux-android
+          cargo build --release -p ferndpi-android --target aarch64-linux-android
+          cargo build --release -p ferndpi-android --target armv7-linux-androideabi
+          cargo build --release -p ferndpi-android --target x86_64-linux-android
+
+      - name: Build tun2socks (hev-socks5-tunnel)
+        run: |
+          git clone --recurse-submodules --depth 1 https://github.com/heiher/hev-socks5-tunnel /tmp/hev
+          cd /tmp/hev
+          "${{ steps.ndk.outputs.ndk-path }}/ndk-build" APP_MODULES=hev-socks5-tunnel -j"$(nproc)"
+          find libs -name "*.so" -print
 
       - name: Fetch latest Flowseal configs
         continue-on-error: true
@@ -60,12 +70,21 @@ jobs:
 
       - name: Bundle core binaries as native libs
         run: |
-          mkdir -p android/app/src/main/jniLibs/arm64-v8a
-          mkdir -p android/app/src/main/jniLibs/armeabi-v7a
-          mkdir -p android/app/src/main/jniLibs/x86_64
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            mkdir -p "android/app/src/main/jniLibs/$abi"
+          done
           cp target/aarch64-linux-android/release/ferndpi android/app/src/main/jniLibs/arm64-v8a/libferndpi.so
           cp target/armv7-linux-androideabi/release/ferndpi android/app/src/main/jniLibs/armeabi-v7a/libferndpi.so
           cp target/x86_64-linux-android/release/ferndpi android/app/src/main/jniLibs/x86_64/libferndpi.so
+
+          cp target/aarch64-linux-android/release/libferndpi_android.so android/app/src/main/jniLibs/arm64-v8a/
+          cp target/armv7-linux-androideabi/release/libferndpi_android.so android/app/src/main/jniLibs/armeabi-v7a/
+          cp target/x86_64-linux-android/release/libferndpi_android.so android/app/src/main/jniLibs/x86_64/
+
+          cp /tmp/hev/libs/arm64-v8a/libhev-socks5-tunnel.so android/app/src/main/jniLibs/arm64-v8a/
+          cp /tmp/hev/libs/armeabi-v7a/libhev-socks5-tunnel.so android/app/src/main/jniLibs/armeabi-v7a/
+          cp /tmp/hev/libs/x86_64/libhev-socks5-tunnel.so android/app/src/main/jniLibs/x86_64/
+
           ls -la android/app/src/main/jniLibs/*/
 
       - name: Set up JDK 17

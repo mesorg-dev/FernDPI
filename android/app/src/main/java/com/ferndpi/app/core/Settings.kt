@@ -19,6 +19,8 @@ data class Settings(
     val lang: String = "system",
     val autoStart: Boolean = false,
     val configId: String = ConfigRepository.CUSTOM_ID,
+    val vpnMode: Boolean = true,
+    val excludedApps: Set<String> = emptySet(),
 )
 
 class SettingsRepository(context: Context) {
@@ -43,6 +45,8 @@ class SettingsRepository(context: Context) {
             lang = prefs.getString(KEY_LANG, s.lang) ?: s.lang,
             autoStart = prefs.getBoolean(KEY_AUTOSTART, s.autoStart),
             configId = prefs.getString(KEY_CONFIG, s.configId) ?: s.configId,
+            vpnMode = prefs.getBoolean(KEY_VPN_MODE, s.vpnMode),
+            excludedApps = prefs.getStringSet(KEY_EXCLUDED, emptySet())?.toSet() ?: emptySet(),
         )
     }
 
@@ -58,6 +62,8 @@ class SettingsRepository(context: Context) {
             .putString(KEY_LANG, s.lang)
             .putBoolean(KEY_AUTOSTART, s.autoStart)
             .putString(KEY_CONFIG, s.configId)
+            .putBoolean(KEY_VPN_MODE, s.vpnMode)
+            .putStringSet(KEY_EXCLUDED, s.excludedApps)
             .apply()
         _settings.update { s }
     }
@@ -77,5 +83,7 @@ class SettingsRepository(context: Context) {
         private const val KEY_LANG = "lang"
         private const val KEY_AUTOSTART = "autostart"
         private const val KEY_CONFIG = "config_id"
+        private const val KEY_VPN_MODE = "vpn_mode"
+        private const val KEY_EXCLUDED = "excluded_apps"
     }
 }

@@ -3,6 +3,7 @@ package com.ferndpi.app
 import android.app.Application
 import com.ferndpi.app.core.ConfigRepository
 import com.ferndpi.app.core.CoreManager
+import com.ferndpi.app.core.NativeCore
 import com.ferndpi.app.core.SettingsRepository
 
 class FernDPIApplication : Application() {
@@ -19,5 +20,6 @@ class FernDPIApplication : Application() {
         settingsRepository = SettingsRepository(this)
         configRepository = ConfigRepository(this)
         coreManager = CoreManager(this)
+        NativeCore.setLogSink { line -> coreManager.appendExternalLog(line) }
     }
 }

@@ -113,6 +113,28 @@ class CoreManager(context: Context) {
         _currentPort = port
     }
 
+    fun appendExternalLog(line: String) = appendLog(line)
+
+    fun noteVpnStarting() {
+        _state.value = CoreState.Starting
+        appendLog("vpn: starting…")
+    }
+
+    fun noteVpnStarted() {
+        _state.value = CoreState.Running(System.currentTimeMillis())
+        appendLog("vpn: connected")
+    }
+
+    fun noteVpnStopped() {
+        _state.value = CoreState.Stopped
+        appendLog("vpn: stopped")
+    }
+
+    fun noteVpnError(message: String) {
+        _state.value = CoreState.Error(message)
+        appendLog("vpn error: $message")
+    }
+
     private fun pumpOutput(proc: Process) {
         runCatching {
             BufferedReader(InputStreamReader(proc.inputStream)).use { reader ->

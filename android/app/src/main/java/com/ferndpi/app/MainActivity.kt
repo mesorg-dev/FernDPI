@@ -24,10 +24,19 @@ class MainActivity : AppCompatActivity() {
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
+    private val vpnPermission =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            vpnViewModel?.onVpnPermissionResult(result)
+        }
+
+    private var vpnViewModel: AppViewModel? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             val viewModel: AppViewModel = viewModel()
+            vpnViewModel = viewModel
+            viewModel.vpnPermissionLauncher = { intent -> vpnPermission.launch(intent) }
             val settings by viewModel.settings.collectAsState()
             FernDPITheme(
                 themeMode = settings.themeMode,

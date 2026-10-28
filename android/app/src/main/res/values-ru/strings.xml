@@ -45,4 +45,10 @@
 
     <string name="behavior_section">Поведение</string>
     <string name="autostart">Запуск при включении</string>
+
+    <string name="vpn_mode">VPN-режим (все приложения)</string>
+    <string name="vpn_excluded_apps">Приложения без VPN (%1$d)</string>
+    <string name="vpn_excluded_title">Без VPN (%1$d)</string>
+    <string name="vpn_excluded_search">Поиск…</string>
+    <string name="vpn_excluded_hint">Отмеченные приложения не пойдут через FernDPI.</string>
 </resources>

@@ -38,9 +38,13 @@ class FernDPIService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val vpnOnly = intent?.getBooleanExtra(EXTRA_VPN, false) == true
         val args = intent?.getStringArrayExtra(EXTRA_ARGS)?.toList()
         val app = application as FernDPIApplication
-        if (args != null && !app.coreManager.isRunning()) {
+        if (vpnOnly) {
+            startForegroundNow(getString(R.string.status_connecting))
+            notifyState()
+        } else if (args != null && !app.coreManager.isRunning()) {
             startForegroundNow(getString(R.string.status_connecting))
             scope.launch(Dispatchers.IO) { app.coreManager.start(args) }
         } else {
@@ -154,6 +158,7 @@ class FernDPIService : Service() {
 
     companion object {
         const val EXTRA_ARGS = "ferndpi_args"
+        const val EXTRA_VPN = "ferndpi_vpn"
         private const val CHANNEL_ID = "ferndpi_core"
         private const val NOTIFICATION_ID = 1
     }

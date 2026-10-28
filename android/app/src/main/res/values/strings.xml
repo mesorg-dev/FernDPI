@@ -51,4 +51,10 @@
 
     <string name="behavior_section">Behavior</string>
     <string name="autostart">Start on boot</string>
+
+    <string name="vpn_mode">VPN mode (all apps)</string>
+    <string name="vpn_excluded_apps">Apps outside VPN (%1$d)</string>
+    <string name="vpn_excluded_title">Outside VPN (%1$d)</string>
+    <string name="vpn_excluded_search">Search…</string>
+    <string name="vpn_excluded_hint">Checked apps bypass FernDPI and keep direct access.</string>
 </resources>

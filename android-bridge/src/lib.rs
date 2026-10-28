@@ -100,7 +100,7 @@ fn stop_inner() {
 
 /// `start(argsJson, vpnService)` — argsJson is a JSON array of CLI arguments.
 #[no_mangle]
-pub extern "system" fn Java_com_fernndpi_app_core_NativeCore_start(
+pub extern "system" fn Java_com_fernndpi_app_core_NativeCore_start0(
     mut env: JNIEnv,
     _class: JClass,
     args_json: JString,
@@ -173,7 +173,7 @@ pub extern "system" fn Java_com_fernndpi_app_core_NativeCore_start(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_fernndpi_app_core_NativeCore_stop(
+pub extern "system" fn Java_com_fernndpi_app_core_NativeCore_stop0(
     _env: JNIEnv,
     _class: JClass,
 ) {
@@ -183,7 +183,7 @@ pub extern "system" fn Java_com_fernndpi_app_core_NativeCore_stop(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_fernndpi_app_core_NativeCore_isRunning(
+pub extern "system" fn Java_com_fernndpi_app_core_NativeCore_isRunning0(
     _env: JNIEnv,
     _class: JClass,
 ) -> jboolean {
@@ -196,7 +196,7 @@ pub extern "system" fn Java_com_fernndpi_app_core_NativeCore_isRunning(
 
 /// `setLogSink(sink)` — sink is a `NativeCore.LogSink` lambda or null.
 #[no_mangle]
-pub extern "system" fn Java_com_fernndpi_app_core_NativeCore_setLogSink(
+pub extern "system" fn Java_com_fernndpi_app_core_NativeCore_setLogSink0(
     env: JNIEnv,
     _class: JClass,
     sink: JObject,

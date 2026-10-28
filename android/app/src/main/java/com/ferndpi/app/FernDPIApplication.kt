@@ -20,6 +20,9 @@ class FernDPIApplication : Application() {
         settingsRepository = SettingsRepository(this)
         configRepository = ConfigRepository(this)
         coreManager = CoreManager(this)
-        NativeCore.setLogSink { line -> coreManager.appendExternalLog(line) }
+        // The native bridge (.so) is loaded lazily by NativeCore — never here.
+        NativeCore.onLinkError = { e ->
+            coreManager.appendExternalLog("native bridge error: ${e.message}")
+        }
     }
 }

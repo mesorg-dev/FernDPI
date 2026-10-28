@@ -82,6 +82,7 @@ class FernDPIVpnService : VpnService() {
         }
 
         val argsJson = JSONArray(args).toString()
+        NativeCore.setLogSink { line -> core.appendExternalLog(line) }
         if (!NativeCore.start(argsJson, this)) {
             runCatching { tun.close() }
             fail("core failed to start")

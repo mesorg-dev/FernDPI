@@ -1,6 +1,7 @@
 package com.ferndpi.app.ui.settings
 
 import android.os.Build
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.core.os.LocaleListCompat
 import com.ferndpi.app.R
 import com.ferndpi.app.core.ThemeMode
 import com.ferndpi.app.ui.AppViewModel
@@ -162,8 +164,21 @@ fun SettingsScreen(
             SettingsDropdown(
                 label = stringResource(R.string.language),
                 value = settings.lang,
-                entries = listOf("en" to "English", "ru" to "Русский"),
-                onSelect = { viewModel.updateSettings { s -> s.copy(lang = it) } },
+                entries = listOf(
+                    "system" to stringResource(R.string.language_system),
+                    "en" to "English",
+                    "ru" to "Русский",
+                ),
+                onSelect = { lang ->
+                    viewModel.updateSettings { s -> s.copy(lang = lang) }
+                    AppCompatDelegate.setApplicationLocales(
+                        if (lang == "system") {
+                            LocaleListCompat.getEmptyLocaleList()
+                        } else {
+                            LocaleListCompat.forLanguageTags(lang)
+                        }
+                    )
+                },
             )
 
             Divider(modifier = Modifier.padding(vertical = 8.dp))

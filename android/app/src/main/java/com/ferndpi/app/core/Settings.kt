@@ -16,7 +16,7 @@ data class Settings(
     val splitPos: String = "mid",
     val fragSize: Int = 64,
     val delayMs: Int = 0,
-    val lang: String = "en",
+    val lang: String = "system",
     val autoStart: Boolean = false,
     val configId: String = ConfigRepository.CUSTOM_ID,
 )

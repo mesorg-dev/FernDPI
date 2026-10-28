@@ -46,6 +46,18 @@ jobs:
           cargo build --release --target armv7-linux-androideabi
           cargo build --release --target x86_64-linux-android
 
+      - name: Fetch latest Flowseal configs
+        continue-on-error: true
+        run: |
+          git clone --depth 1 https://github.com/flowseal/zapret-discord-youtube /tmp/flowseal
+          mkdir -p android/app/src/main/assets/flowseal
+          cp /tmp/flowseal/*.bat android/app/src/main/assets/flowseal/
+          cp -r /tmp/flowseal/lists android/app/src/main/assets/flowseal/lists
+          if [ -d /tmp/flowseal/bin ]; then
+            cp -r /tmp/flowseal/bin android/app/src/main/assets/flowseal/bin
+          fi
+          ls android/app/src/main/assets/flowseal
+
       - name: Bundle core binaries into APK assets
         run: |
           mkdir -p android/app/src/main/assets/core

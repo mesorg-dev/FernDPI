@@ -152,9 +152,16 @@ class CoreManager(context: Context) {
         private val SUPPORTED_ABIS = setOf("arm64-v8a", "armeabi-v7a", "x86_64")
 
         fun buildArgs(settings: Settings, configPath: String?): List<String> {
+            val lang = when (settings.lang) {
+                "system" -> when (Locale.getDefault().language) {
+                    "ru" -> "ru"
+                    else -> "en"
+                }
+                else -> settings.lang
+            }
             val args = mutableListOf(
                 "--listen", "127.0.0.1:${settings.port}",
-                "--lang", settings.lang,
+                "--lang", lang,
             )
             if (configPath != null) {
                 args += listOf("-c", configPath)

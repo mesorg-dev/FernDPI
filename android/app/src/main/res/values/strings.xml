@@ -47,6 +47,7 @@
     <string name="frag_size">Fragment size (bytes)</string>
     <string name="delay_ms">Delay (ms)</string>
     <string name="language">Language</string>
+    <string name="language_system">System</string>
 
     <string name="behavior_section">Behavior</string>
     <string name="autostart">Start on boot</string>

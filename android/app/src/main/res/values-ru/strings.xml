@@ -41,6 +41,7 @@
     <string name="frag_size">Размер фрагмента (байт)</string>
     <string name="delay_ms">Задержка (мс)</string>
     <string name="language">Язык</string>
+    <string name="language_system">Системный</string>
 
     <string name="behavior_section">Поведение</string>
     <string name="autostart">Запуск при включении</string>

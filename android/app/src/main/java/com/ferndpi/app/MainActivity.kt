@@ -4,12 +4,14 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -17,7 +19,7 @@ import com.ferndpi.app.ui.AppViewModel
 import com.ferndpi.app.ui.FernDPIApp
 import com.ferndpi.app.ui.theme.FernDPITheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
@@ -26,7 +28,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val viewModel: AppViewModel = viewModel()
-            val settings = viewModel.settings.value
+            val settings by viewModel.settings.collectAsState()
             FernDPITheme(
                 themeMode = settings.themeMode,
                 dynamicColor = settings.dynamicColor,

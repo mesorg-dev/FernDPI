@@ -1,0 +1,3 @@
+# Never desync these
+trusted.example.com
+localhost

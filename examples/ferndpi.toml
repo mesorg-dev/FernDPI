@@ -1,0 +1,37 @@
+# ferndpi example config — zapret-inspired, userspace, no root.
+# Run: ferndpi --config examples/ferndpi.toml
+
+listen = "127.0.0.1:1080"
+lang = "ru"
+
+[dpi]
+desync = "split"          # default for everyone not matched by rules
+split_pos = "mid"
+delay_ms = 10
+
+# Static domain → IP (like /etc/hosts, checked before DNS)
+[hosts]
+"blocked.example.com" = "127.0.0.1"
+"trusted.example.com" = "127.0.0.1"
+
+[[hostlist]]
+name = "blocked"
+file = "lists/blocked.txt"
+
+[[hostlist]]
+name = "trusted"
+file = "lists/trusted.txt"
+exclude = true
+
+# Domains from `blocked` get record fragmentation + SNI split
+[[rule]]
+hostlist = "blocked"
+desync = "frag,split"
+split_pos = "midsld"
+frag_size = 80
+delay_ms = 10
+
+# Domains from `trusted` are always plain tunnel (also forced by exclude)
+[[rule]]
+hostlist = "trusted"
+desync = "none"

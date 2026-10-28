@@ -1,0 +1,4 @@
+# Domains to desync (one per line, zapret hostlist format)
+blocked.example.com
+*.blocked.example.com
+example.org

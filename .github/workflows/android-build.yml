@@ -49,14 +49,23 @@ jobs:
           cargo build --release -p ferndpi-android --target armv7-linux-androideabi
           cargo build --release -p ferndpi-android --target x86_64-linux-android
 
-      - name: Build tun2socks (hev-socks5-tunnel)
+      - name: Download tun2socks (hev-socks5-tunnel aar)
         run: |
-          git clone --recurse-submodules --shallow-submodules --depth 1 \
-            https://github.com/heiher/hev-socks5-tunnel /tmp/hev
-          cd /tmp/hev
-          "${{ steps.ndk.outputs.ndk-path }}/ndk-build" VERBOSE=1 \
-            APP_MODULES=hev-socks5-tunnel -j"$(nproc)"
-          find libs -name "*.so" -print
+          curl -sL -o /tmp/hev.aar \
+            "https://github.com/heiher/hev-socks5-tunnel/releases/download/2.19.3/hev-socks5-tunnel.aar"
+          python3 - <<'PY'
+          import zipfile
+          z = zipfile.ZipFile("/tmp/hev.aar")
+          for abi in ("arm64-v8a", "armeabi-v7a", "x86_64"):
+              data = z.read(f"jni/{abi}/libhev-socks5-tunnel.so")
+              assert data[:4] == b"\x7fELF", abi
+              print(abi, len(data))
+          z.extractall("/tmp/hev-aar", members=[
+              f"jni/{abi}/libhev-socks5-tunnel.so"
+              for abi in ("arm64-v8a", "armeabi-v7a", "x86_64")
+          ])
+          PY
+          find /tmp/hev-aar -name "*.so" -print
 
       - name: Fetch latest Flowseal configs
         continue-on-error: true
@@ -83,9 +92,9 @@ jobs:
           cp target/armv7-linux-androideabi/release/libferndpi_android.so android/app/src/main/jniLibs/armeabi-v7a/
           cp target/x86_64-linux-android/release/libferndpi_android.so android/app/src/main/jniLibs/x86_64/
 
-          cp /tmp/hev/libs/arm64-v8a/libhev-socks5-tunnel.so android/app/src/main/jniLibs/arm64-v8a/
-          cp /tmp/hev/libs/armeabi-v7a/libhev-socks5-tunnel.so android/app/src/main/jniLibs/armeabi-v7a/
-          cp /tmp/hev/libs/x86_64/libhev-socks5-tunnel.so android/app/src/main/jniLibs/x86_64/
+          cp /tmp/hev-aar/jni/arm64-v8a/libhev-socks5-tunnel.so android/app/src/main/jniLibs/arm64-v8a/
+          cp /tmp/hev-aar/jni/armeabi-v7a/libhev-socks5-tunnel.so android/app/src/main/jniLibs/armeabi-v7a/
+          cp /tmp/hev-aar/jni/x86_64/libhev-socks5-tunnel.so android/app/src/main/jniLibs/x86_64/
 
           ls -la android/app/src/main/jniLibs/*/
 

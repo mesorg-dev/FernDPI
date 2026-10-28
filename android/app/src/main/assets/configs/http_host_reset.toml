@@ -1,0 +1,5 @@
+# HTTP-only: reset Host header for plain HTTP requests.
+listen = "127.0.0.1:1080"
+
+[dpi]
+desync = "http"

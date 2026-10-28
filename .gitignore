@@ -1,3 +1,12 @@
 /target
 /demo/*.log
 /demo/*.pem
+
+/android/.gradle/
+/android/build/
+/android/app/build/
+/android/local.properties
+/android/app/src/main/assets/core/
+/android/.idea/
+/android/captures/
+*.iml

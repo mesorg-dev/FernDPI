@@ -1,0 +1,7 @@
+# Split TLS ClientHello in the middle for all traffic.
+listen = "127.0.0.1:1080"
+
+[dpi]
+desync = "split"
+split_pos = "mid"
+delay_ms = 0

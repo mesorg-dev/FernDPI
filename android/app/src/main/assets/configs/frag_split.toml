@@ -1,0 +1,8 @@
+# Fragment the TLS record, then split at the middle of the SLD.
+listen = "127.0.0.1:1080"
+
+[dpi]
+desync = "frag,split"
+split_pos = "midsld"
+frag_size = 80
+delay_ms = 10

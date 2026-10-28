@@ -1,0 +1,7 @@
+# Multi-segment split of the TLS ClientHello.
+listen = "127.0.0.1:1080"
+
+[dpi]
+desync = "multisplit"
+split_pos = "1,mid"
+delay_ms = 10

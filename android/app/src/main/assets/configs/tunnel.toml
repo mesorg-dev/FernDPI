@@ -1,0 +1,5 @@
+# Plain tunnel, no desync — for testing or unrestricted networks.
+listen = "127.0.0.1:1080"
+
+[dpi]
+desync = "none"

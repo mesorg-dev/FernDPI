@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FernDPI</string>
+
+    <string name="main_title">FernDPI</string>
+    <string name="settings">Settings</string>
+    <string name="back">Back</string>
+
+    <string name="status_disconnected">Disconnected</string>
+    <string name="status_connecting">Connecting…</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_error">Error</string>
+    <string name="connected_since">Running since %1$s</string>
+    <string name="proxy_address">SOCKS5 proxy: %1$s</string>
+
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+
+    <string name="config_section">Configuration</string>
+    <string name="config_custom">Custom (from settings)</string>
+    <string name="config_import">Import config…</string>
+    <string name="config_import_failed">Failed to import config</string>
+    <string name="core_missing">Core binary is not bundled in this build</string>
+
+    <string name="log_section">Core log</string>
+    <string name="log_empty">No log output yet</string>
+
+    <string name="appearance_section">Appearance</string>
+    <string name="theme_mode">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="dynamic_colors">Dynamic colors</string>
+
+    <string name="core_section">Core</string>
+    <string name="socks_port">SOCKS5 port</string>
+    <string name="strategy">Strategy</string>
+    <string name="strategy_none">Tunnel (no desync)</string>
+    <string name="strategy_split">Split</string>
+    <string name="strategy_multisplit">Multisplit</string>
+    <string name="strategy_frag">Fragmentation</string>
+    <string name="strategy_http">HTTP host reset</string>
+    <string name="split_pos">Split position</string>
+    <string name="split_pos_mid">Mid</string>
+    <string name="split_pos_midsld">Middle of SLD</string>
+    <string name="split_pos_end">End</string>
+    <string name="frag_size">Fragment size (bytes)</string>
+    <string name="delay_ms">Delay (ms)</string>
+    <string name="language">Language</string>
+
+    <string name="behavior_section">Behavior</string>
+    <string name="autostart">Start on boot</string>
+</resources>

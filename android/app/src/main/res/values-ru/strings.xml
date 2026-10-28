@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="status_disconnected">Отключено</string>
+    <string name="status_connecting">Подключение…</string>
+    <string name="status_connected">Подключено</string>
+    <string name="status_error">Ошибка</string>
+    <string name="connected_since">Работает с %1$s</string>
+    <string name="proxy_address">SOCKS5-прокси: %1$s</string>
+
+    <string name="connect">Подключить</string>
+    <string name="disconnect">Отключить</string>
+
+    <string name="config_section">Конфигурация</string>
+    <string name="config_custom">Своя (из настроек)</string>
+    <string name="config_import">Импорт конфига…</string>
+    <string name="config_import_failed">Не удалось импортировать конфиг</string>
+    <string name="core_missing">Ядро не включено в эту сборку</string>
+
+    <string name="log_section">Лог ядра</string>
+    <string name="log_empty">Лог пуст</string>
+
+    <string name="appearance_section">Оформление</string>
+    <string name="theme_mode">Тема</string>
+    <string name="theme_system">Системная</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Тёмная</string>
+    <string name="dynamic_colors">Динамические цвета</string>
+
+    <string name="core_section">Ядро</string>
+    <string name="socks_port">SOCKS5-порт</string>
+    <string name="strategy">Стратегия</string>
+    <string name="strategy_none">Туннель (без обхода)</string>
+    <string name="strategy_split">Split</string>
+    <string name="strategy_multisplit">Multisplit</string>
+    <string name="strategy_frag">Фрагментация</string>
+    <string name="strategy_http">Сброс Host (HTTP)</string>
+    <string name="split_pos">Позиция split</string>
+    <string name="split_pos_mid">Середина</string>
+    <string name="split_pos_midsld">Середина SLD</string>
+    <string name="split_pos_end">Конец</string>
+    <string name="frag_size">Размер фрагмента (байт)</string>
+    <string name="delay_ms">Задержка (мс)</string>
+    <string name="language">Язык</string>
+
+    <string name="behavior_section">Поведение</string>
+    <string name="autostart">Запуск при включении</string>
+</resources>

@@ -28,7 +28,7 @@ jobs:
         uses: nttld/setup-ndk@v1
         id: ndk
         with:
-          ndk-version: r27c
+          ndk-version: r27d
 
       - name: Configure Cargo linkers (API 26)
         run: |
@@ -51,9 +51,11 @@ jobs:
 
       - name: Build tun2socks (hev-socks5-tunnel)
         run: |
-          git clone --recurse-submodules --depth 1 https://github.com/heiher/hev-socks5-tunnel /tmp/hev
+          git clone --recurse-submodules --shallow-submodules --depth 1 \
+            https://github.com/heiher/hev-socks5-tunnel /tmp/hev
           cd /tmp/hev
-          "${{ steps.ndk.outputs.ndk-path }}/ndk-build" APP_MODULES=hev-socks5-tunnel -j"$(nproc)"
+          "${{ steps.ndk.outputs.ndk-path }}/ndk-build" VERBOSE=1 \
+            APP_MODULES=hev-socks5-tunnel -j"$(nproc)"
           find libs -name "*.so" -print
 
       - name: Fetch latest Flowseal configs

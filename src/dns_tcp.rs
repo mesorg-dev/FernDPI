@@ -123,22 +123,23 @@ async fn query_server(server: &str, host: &str, qtype: u16) -> Result<Vec<IpAddr
 }
 
 async fn connect_protected(addr: std::net::SocketAddr) -> Result<TcpStream> {
-    if !netguard::is_active() {
-        return Ok(TcpStream::connect(addr).await?);
+    #[cfg(unix)]
+    if netguard::is_active() {
+        use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+        use std::os::unix::io::AsRawFd;
+        let domain = if addr.is_ipv4() { Domain::IPV4 } else { Domain::IPV6 };
+        let socket = Socket::new(domain, Type::STREAM, Some(Protocol::TCP))?;
+        netguard::protect(socket.as_raw_fd());
+        socket.set_nonblocking(false)?;
+        let std = tokio::task::spawn_blocking(move || -> anyhow::Result<std::net::TcpStream> {
+            socket.connect(&SockAddr::from(addr))?;
+            socket.set_nonblocking(true)?;
+            Ok(socket.into())
+        })
+        .await??;
+        return Ok(TcpStream::from_std(std)?);
     }
-    use socket2::{Domain, Protocol, Socket, Type, SockAddr};
-    use std::os::unix::io::AsRawFd;
-    let domain = if addr.is_ipv4() { Domain::IPV4 } else { Domain::IPV6 };
-    let socket = Socket::new(domain, Type::STREAM, Some(Protocol::TCP))?;
-    netguard::protect(socket.as_raw_fd());
-    socket.set_nonblocking(false)?;
-    let std = tokio::task::spawn_blocking(move || -> anyhow::Result<std::net::TcpStream> {
-        socket.connect(&SockAddr::from(addr))?;
-        socket.set_nonblocking(true)?;
-        Ok(socket.into())
-    })
-    .await??;
-    Ok(TcpStream::from_std(std)?)
+    Ok(TcpStream::connect(addr).await?)
 }
 
 pub async fn resolve(host: &str) -> Result<Vec<IpAddr>> {

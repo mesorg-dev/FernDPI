@@ -26,3 +26,12 @@ pub fn protect(fd: i32) {
         f(fd);
     }
 }
+
+/// Protect a socket's fd via the hook (no-op without a hook / off-unix).
+#[cfg(unix)]
+pub fn protect_socket<T: std::os::unix::io::AsRawFd>(sock: &T) {
+    protect(sock.as_raw_fd());
+}
+
+#[cfg(not(unix))]
+pub fn protect_socket<T>(_sock: &T) {}

@@ -8,7 +8,6 @@
 
 use std::collections::HashSet;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
-use std::os::unix::io::AsRawFd;
 
 use anyhow::Result;
 use tokio::io::AsyncReadExt;
@@ -30,7 +29,7 @@ const IDLE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(180);
 /// client closes it the association ends (RFC 1928).
 pub(crate) async fn serve_associate(mut control: TcpStream, core: &Core) -> Result<()> {
     let sock = UdpSocket::bind("127.0.0.1:0").await?;
-    netguard::protect(sock.as_raw_fd());
+    netguard::protect_socket(&sock);
     let bind = sock.local_addr()?;
     reply(&mut control, 0x00, bind).await;
     debug!("udp associate relay on {bind}");

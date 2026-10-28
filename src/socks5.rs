@@ -86,23 +86,23 @@ pub(crate) async fn resolve_target(
 
 async fn connect_one(addr: SocketAddr, timeout: std::time::Duration) -> Result<TcpStream> {
     let fut = async {
+        #[cfg(unix)]
         if netguard::is_active() {
-            use socket2::{Domain, Protocol, Socket, Type};
+            use socket2::{Domain, Protocol, Socket, SockAddr, Type};
             use std::os::unix::io::AsRawFd;
             let domain = if addr.is_ipv4() { Domain::IPV4 } else { Domain::IPV6 };
             let socket = Socket::new(domain, Type::STREAM, Some(Protocol::TCP))?;
             netguard::protect(socket.as_raw_fd());
             socket.set_nonblocking(false)?;
             let std = tokio::task::spawn_blocking(move || -> anyhow::Result<std::net::TcpStream> {
-                socket.connect(&socket2::SockAddr::from(addr))?;
+                socket.connect(&SockAddr::from(addr))?;
                 socket.set_nonblocking(true)?;
                 Ok(socket.into())
             })
             .await??;
-            Ok(TcpStream::from_std(std)?)
-        } else {
-            Ok(TcpStream::connect(addr).await?)
+            return Ok(TcpStream::from_std(std)?);
         }
+        Ok(TcpStream::connect(addr).await?)
     };
     tokio::time::timeout(timeout, fut)
         .await

@@ -82,6 +82,27 @@ jobs:
           cd android
           ./gradlew --no-daemon assembleDebug assembleRelease
 
+      - name: Sign release APK (optional)
+        if: env.RELEASE_KEYSTORE_B64 != ''
+        env:
+          RELEASE_KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_B64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          echo "$RELEASE_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          BT=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n1)
+          APK=$(ls android/app/build/outputs/apk/release/*-unsigned.apk | head -n1)
+          SIGNED="${APK%-unsigned.apk}.apk"
+          "$ANDROID_HOME/build-tools/$BT/apksigner" sign \
+            --ks "$RUNNER_TEMP/release.jks" \
+            --ks-pass env:RELEASE_KEYSTORE_PASSWORD \
+            --ks-key-alias "$RELEASE_KEY_ALIAS" \
+            --key-pass env:RELEASE_KEY_PASSWORD \
+            --out "$SIGNED" "$APK"
+          "$ANDROID_HOME/build-tools/$BT/apksigner" verify "$SIGNED"
+          rm -f "$RUNNER_TEMP/release.jks" "$APK"
+
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
